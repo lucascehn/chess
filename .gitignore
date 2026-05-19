@@ -1,0 +1,22 @@
+# Raw API dumps (large, regeneratable)
+raw_stats_*.json
+raw_games_*.json
+
+# Analysis reports
+report_*.txt
+categorization_*.json
+
+# Generated quiz assets
+burn_quiz/*.png
+burn_quiz/*.json
+blunder_quiz/*.png
+blunder_quiz/*.json
+
+# Downloaded piece images
+pieces/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
