@@ -2,6 +2,9 @@
 raw_stats_*.json
 raw_games_*.json
 
+# Stockfish eval cache (regeneratable, can get large)
+eval_cache.json
+
 # Analysis reports
 report_*.txt
 categorization_*.json

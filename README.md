@@ -22,6 +22,36 @@ When you burn a lot of time on a single move in a blitz game, one of three thing
 
 ---
 
+## The Deeper Problem: Prerequisites
+
+There's a subtler issue beneath the burn move itself.
+
+By the time you're staring at a complex position and burning 40 seconds, the *reason* it's complex is usually that you missed something 3–8 moves earlier — a small positional signal, a threat being built, a piece starting to become dangerous. If you had noticed it then, you'd have either resolved it cheaply at the time, or at least arrived at the burn position having already calculated the key ideas. Instead you arrive cold and have to do all the work on the clock.
+
+In other words: **you're not just slow at the burn move — you're paying for moves you played too fast earlier.**
+
+Examples of what this looks like in practice:
+- You don't notice an opponent's bishop is about to become a monster on a long diagonal → 5 moves later you're burning 40s trying to neutralize it
+- You miss that a pawn trade will open a file toward your king → you arrive at a sharp position and have to calculate from scratch under time pressure
+- You sense a sacrifice opportunity but didn't track the coordination needed for it from 4 moves back → the calculation at the burn moment is now 3x harder
+
+### How to address this
+
+The current burn_quiz trains *speed* at the critical moment — pattern recognition so you arrive with an answer already preloaded. That's valuable. But the prerequisites problem suggests a second layer of training:
+
+**1. Trace back from the burn position.**
+Show not just the burn position but also the position N moves earlier (maybe 5). Ask: what was the key structural/tactical idea being set up here that you should have seen? This is the "prerequisite position" — the last moment where sensing the upcoming complexity was cheapest.
+
+**2. Build prerequisite quizzes.** *(potential future script: `make_prerequisite_quiz.py`)*
+For each burn position in `burn_quiz/`, extract the board state 5 moves prior, evaluate it, and flag if there was a clean forcing plan available that would have either simplified the position or given you a clear advantage you missed. These positions are quieter and easier to train on — they're where prophylactic thinking lives.
+
+**3. Time allocation awareness.**
+If you see the hallmarks of a complex position forming — opposite-side castling, open files toward the king, a piece that's about to be sacrificed — start budgeting your clock *before* the critical moment arrives. The burn isn't just about calculation speed; it's also about recognizing early that you'll need time later.
+
+The practical insight: **drilling the burn positions makes you faster at the crisis. Drilling the prerequisite positions means you arrive at fewer crises in the first place.**
+
+---
+
 ## Scripts
 
 ### When to run each script
@@ -33,10 +63,16 @@ After every session (or whenever you want fresh data):
     3. make_quiz.py            → regenerate burn_quiz/ (A1+A2 positions only)
     4. make_blunder_quiz.py    → regenerate blunder_quiz/ (A3 positions only)
 
+    Or just: python3 run.py    → runs all four steps in one shot
+
 First-time setup only:
     brew install stockfish
     pip3 install Pillow --break-system-packages
 ```
+
+> **Repeat runs are fast.** Stockfish evaluations are cached to `eval_cache.json`
+> on disk.  Once a position has been evaluated, subsequent runs skip it entirely.
+> Only genuinely new games (played since your last run) cost any Stockfish time.
 
 ---
 
@@ -170,6 +206,7 @@ from scratch in `burn_finder.py`.
 
 ```
 Chess/
+├── run.py                  # 0. run everything in one shot
 ├── analyze_chess.py        # 1. fetch games + print report
 ├── categorize_losses.py    # 2. classify losses (requires stockfish)
 ├── make_quiz.py            # 3. generate burn_quiz/ (A1+A2 only)
@@ -180,6 +217,7 @@ Chess/
 └── README.md
 
 # Generated (gitignored):
+├── eval_cache.json         # Stockfish eval cache — grows over time, speeds up repeat runs
 ├── raw_games_*.json        # chess.com API snapshots
 ├── raw_stats_*.json
 ├── report_*.txt
@@ -214,3 +252,5 @@ Built through a conversation with Claude (Anthropic). Key prompts in order:
 13. *"There may be multiple blunders and multiple burn moves per game — take that into account."*
 14. *"These should only be the moves that statistically stand out — if we look too granularly then every move is a blunder and a burn move."*
 15. *"Update the README based on all the new prompts. Tell me when to run each script."*
+16. *"Add a note about the prerequisites problem — burning time because I missed small positional signals earlier."*
+17. *"Is it possible to cache the engine calculation of positions? Every time I run run.py it's taking a while."*

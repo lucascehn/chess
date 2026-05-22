@@ -36,7 +36,7 @@ import urllib.parse
 
 from burn_finder import (
     find_burn, draw_board, download_pieces,
-    StockfishEvaluator, find_stockfish, classify_burn,
+    StockfishEvaluator, find_stockfish, classify_burn, EvalCache,
 )
 from blunder_finder import find_all_blunders
 
@@ -102,8 +102,9 @@ def main():
     answers = []
     n_out   = 0
 
-    with StockfishEvaluator(sf_path, movetime_ms=300) as classify_sf, \
-         StockfishEvaluator(sf_path, movetime_ms=STOCKFISH_MS) as blunder_sf:
+    shared_cache = EvalCache()
+    with StockfishEvaluator(sf_path, movetime_ms=300, cache=shared_cache) as classify_sf, \
+         StockfishEvaluator(sf_path, movetime_ms=STOCKFISH_MS, cache=shared_cache) as blunder_sf:
 
         for game in losses:
             our_color = game["our_color"]

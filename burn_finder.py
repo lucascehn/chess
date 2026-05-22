@@ -208,6 +208,7 @@ def find_all_burns(pgn: str, our_color: str,
 
 import subprocess
 import shutil
+import json as _json
 
 # Centipawn thresholds for classification (from your perspective, positive = winning)
 WINNING_CP  =  150   # ≥ +1.5 pawns → you're winning
@@ -219,6 +220,71 @@ MIDDLEGAME_END   = 40
 
 # Minimum time burn (seconds) to flag a position as a burn moment
 BURN_THRESHOLD = 15
+
+
+_CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "eval_cache.json")
+
+
+class EvalCache:
+    """
+    Persistent disk cache for Stockfish evaluations.
+
+    Keyed by ``"{fen}|{our_color}"``.  Loaded from disk on first use, saved
+    back on close().  Silently survives a corrupted or missing cache file.
+
+    Typical usage (handled automatically inside StockfishEvaluator):
+
+        cache = EvalCache()
+        result = cache.get(fen, our_color)   # None on miss
+        if result is None:
+            result = <stockfish eval>
+            cache.set(fen, our_color, result)
+        cache.save()
+    """
+
+    def __init__(self, path: str = _CACHE_PATH):
+        self._path  = path
+        self._data: dict = {}
+        self._hits  = 0
+        self._misses = 0
+        self._dirty = False
+        self._load()
+
+    def _load(self):
+        if os.path.exists(self._path):
+            try:
+                with open(self._path) as f:
+                    self._data = _json.load(f)
+            except Exception:
+                self._data = {}
+
+    def _key(self, fen: str, our_color: str) -> str:
+        return f"{fen}|{our_color}"
+
+    def get(self, fen: str, our_color: str) -> "dict | None":
+        result = self._data.get(self._key(fen, our_color))
+        if result is not None:
+            self._hits += 1
+        else:
+            self._misses += 1
+        return result
+
+    def set(self, fen: str, our_color: str, result: dict):
+        self._data[self._key(fen, our_color)] = result
+        self._dirty = True
+
+    def save(self):
+        """Write cache to disk only if it changed."""
+        if self._dirty:
+            with open(self._path, "w") as f:
+                _json.dump(self._data, f)
+            self._dirty = False
+
+    def stats(self) -> str:
+        total = self._hits + self._misses
+        pct   = f"{100 * self._hits // total}%" if total else "—"
+        return (f"{self._hits}/{total} cache hits ({pct})  "
+                f"— {len(self._data)} positions stored in {os.path.basename(self._path)}")
 
 
 def find_stockfish() -> str | None:
@@ -252,10 +318,12 @@ class StockfishEvaluator:
         depth    : search depth reached
     """
 
-    def __init__(self, path: str | None = None, movetime_ms: int = 300):
+    def __init__(self, path: str | None = None, movetime_ms: int = 300,
+                 cache: "EvalCache | None" = None):
         self._path       = path or find_stockfish()
         self._movetime   = movetime_ms
         self._proc       = None
+        self._cache      = cache if cache is not None else EvalCache()
         if self._path:
             self._proc = subprocess.Popen(
                 [self._path],
@@ -282,9 +350,22 @@ class StockfishEvaluator:
                 return lines
 
     def evaluate(self, fen: str, our_color: str) -> dict | None:
-        """Evaluate one position. Returns None if stockfish isn't available."""
+        """
+        Evaluate one position.
+
+        Checks the on-disk cache first — if a prior eval exists for this
+        (FEN, color) pair, returns it immediately without touching Stockfish.
+        Otherwise runs Stockfish and stores the result for next time.
+
+        Returns None if Stockfish is not available.
+        """
         if not self._proc:
             return None
+
+        cached = self._cache.get(fen, our_color)
+        if cached is not None:
+            return cached
+
         self._send(f"position fen {fen}")
         self._send(f"go movetime {self._movetime}")
         lines = self._read_until("bestmove")
@@ -308,11 +389,14 @@ class StockfishEvaluator:
 
         if mate is not None:
             our_mate = mate if our_color == "white" else -mate
-            return {"cp": 3000 if our_mate > 0 else -3000,
-                    "depth": depth, "mate_in": our_mate}
+            result = {"cp": 3000 if our_mate > 0 else -3000,
+                      "depth": depth, "mate_in": our_mate}
+        else:
+            our_cp = cp if our_color == "white" else -cp
+            result = {"cp": our_cp, "depth": depth, "mate_in": None}
 
-        our_cp = cp if our_color == "white" else -cp
-        return {"cp": our_cp, "depth": depth, "mate_in": None}
+        self._cache.set(fen, our_color, result)
+        return result
 
     def close(self):
         if self._proc:
@@ -320,6 +404,8 @@ class StockfishEvaluator:
                 self._send("quit"); self._proc.wait(timeout=3)
             except Exception:
                 self._proc.kill()
+        self._cache.save()
+        print(f"  eval cache: {self._cache.stats()}")
 
     def __enter__(self):  return self
     def __exit__(self, *_): self.close()
