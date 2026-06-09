@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chess.com Game Analyzer for handsomestbedbug
+Chess.com Game Analyzer for lucasc3hn
 Fetches stats and recent games, then analyzes losses.
 """
 
@@ -11,12 +11,26 @@ import os
 import sys
 from datetime import datetime
 
-USERNAME = "handsomestbedbug"
+USERNAME = "lucasc3hn"
 STATS_URL = f"https://api.chess.com/pub/player/{USERNAME}/stats"
+ARCHIVES_URL = f"https://api.chess.com/pub/player/{USERNAME}/games/archives"
 
 def get_current_month_url():
     now = datetime.now()
     return f"https://api.chess.com/pub/player/{USERNAME}/games/{now.year}/{now.month:02d}"
+
+def get_all_archive_urls():
+    data = fetch(ARCHIVES_URL)
+    return data.get("archives", [])
+
+def fetch_all_games():
+    urls = get_all_archive_urls()
+    all_games = []
+    for url in urls:
+        print(f"  Fetching {url} ...")
+        data = fetch(url)
+        all_games.extend(data.get("games", []))
+    return {"games": all_games}
 
 def fetch(url):
     req = urllib.request.Request(url, headers={"User-Agent": "chess-analyzer/1.0"})
@@ -62,7 +76,8 @@ def analyze_game(pgn, our_color):
         flagged = final_time == 0
         time_trouble = any(t < 10 for t in our_clock_secs[-5:]) if len(our_clock_secs) >= 5 else final_time < 10
 
-    move_count = len(re.findall(r'\d+\.', move_text))
+    move_numbers = re.findall(r'(?<!\S)(\d+)\.(?!\.)', move_text)
+    move_count = max((int(n) for n in move_numbers), default=0)
 
     return {
         "flagged": flagged,
@@ -167,7 +182,8 @@ def print_report(stats_data, game_analysis):
     print(f"  All-time record: {record.get('win','?')}W / {record.get('loss','?')}L / {record.get('draw','?')}D")
 
     a = game_analysis
-    print(f"\n📅 THIS MONTH")
+    period_label = "ALL TIME" if "--all" in sys.argv else "THIS MONTH"
+    print(f"\n📅 {period_label}")
     print(f"  Games played   : {a['total_games']}")
     print(f"  Record         : {a['wins']}W / {a['losses']}L / {a['draws']}D  ({a['win_rate']}% win rate)")
     print(f"  Rating change  : {a['start_rating']} → {a['end_rating']}")
@@ -193,7 +209,7 @@ def print_report(stats_data, game_analysis):
     print("\n" + "=" * 60)
 
 def main():
-    games_url = get_current_month_url()
+    all_time = "--all" in sys.argv
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
     # Output directory: same folder as this script
@@ -208,8 +224,14 @@ def main():
         json.dump(stats_data, f, indent=2)
     print(f"  → saved to {raw_stats_file}")
 
-    print(f"Fetching games from {games_url} ...")
-    games_data = fetch(games_url)
+    if all_time:
+        print("Fetching ALL-TIME games from archives ...")
+        games_data = fetch_all_games()
+    else:
+        games_url = get_current_month_url()
+        print(f"Fetching games from {games_url} ...")
+        games_data = fetch(games_url)
+
     with open(raw_games_file, 'w') as f:
         json.dump(games_data, f, indent=2)
     print(f"  → saved to {raw_games_file}")

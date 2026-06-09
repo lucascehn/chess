@@ -27,7 +27,9 @@ def section(title):
 # ------------------------------------------------------------------
 section("1 / 3   Fetching games from chess.com")
 import analyze_chess
+sys.argv.append("--all")
 analyze_chess.main()
+sys.argv.remove("--all")
 
 # ------------------------------------------------------------------
 # 2. Generate burn_quiz (A1 + A2 positions)

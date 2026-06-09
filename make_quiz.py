@@ -41,7 +41,7 @@ from burn_finder import (
     StockfishEvaluator, find_stockfish, classify_burn,
 )
 
-USERNAME   = "handsomestbedbug"
+USERNAME   = "lucasc3hn"
 QUIZ_DIR   = os.path.join(os.path.dirname(__file__), "burn_quiz")
 PIECES_DIR = os.path.join(os.path.dirname(__file__), "pieces")
 

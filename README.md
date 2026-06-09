@@ -237,7 +237,7 @@ Chess/
 
 Built through a conversation with Claude (Anthropic). Key prompts in order:
 
-1. *"Pull up all my chess games at chess.com/member/handsomestbedbug and give me reasons why I lost."*
+1. *"Pull up all my chess games at chess.com/member/lucasc3hn and give me reasons why I lost."*
 2. *"Create a script that curls the stats and games API endpoints and analyzes them repeatedly. Save it to a Chess folder."*
 3. *"Edit the script so it outputs the API results to a file so I can upload them for proper analysis."*
 4. *"I flag a lot because I'm trying to find a beautiful move. I think in most positions where I'm flagging I sense a win but can't find it. Can you see if this is the case?"*

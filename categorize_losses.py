@@ -54,7 +54,7 @@ from burn_finder import (
 # Config
 # ---------------------------------------------------------------------------
 
-USERNAME         = "handsomestbedbug"
+USERNAME         = "lucasc3hn"
 STOCKFISH_MS     = 300   # ms per position
 
 # ---------------------------------------------------------------------------

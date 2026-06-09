@@ -40,7 +40,7 @@ from burn_finder import (
 )
 from blunder_finder import find_all_blunders
 
-USERNAME     = "handsomestbedbug"
+USERNAME     = "lucasc3hn"
 BLUNDER_DIR  = os.path.join(os.path.dirname(__file__), "blunder_quiz")
 PIECES_DIR   = os.path.join(os.path.dirname(__file__), "pieces")
 STOCKFISH_MS = 100   # lower per-position time — we evaluate many positions per game
