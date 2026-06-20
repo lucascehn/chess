@@ -58,12 +58,13 @@ The practical insight: **drilling the burn positions makes you faster at the cri
 
 ```
 After every session (or whenever you want fresh data):
-    1. analyze_chess.py        → fetch your latest games from chess.com
-    2. categorize_losses.py    → classify every loss and see the breakdown
-    3. make_quiz.py            → regenerate burn_quiz/ (A1+A2 positions only)
-    4. make_blunder_quiz.py    → regenerate blunder_quiz/ (A3 positions only)
+    1. analyze_chess.py           → fetch your latest games from chess.com
+    2. categorize_losses.py       → classify every loss and see the breakdown
+    3. make_quiz.py               → regenerate burn_quiz/ (A1+A2 positions only)
+    4. make_blunder_quiz.py       → regenerate blunder_quiz/ (A3 positions only)
+    5. study_recommendations.py   → print a prioritised study plan
 
-    Or just: python3 run.py    → runs all four steps in one shot
+    Or just: python3 run.py    → runs all five steps in one shot
 
 First-time setup only:
     brew install stockfish
@@ -161,6 +162,21 @@ Multiple blunders per game are included when they exist.
 
 ---
 
+### `study_recommendations.py` — Prioritised study plan
+
+```bash
+python3 study_recommendations.py
+```
+
+Reads your latest categorization file and prints a prioritised, data-driven
+study plan.  Identifies your primary weakness, gives you concrete drills and
+habits to fix it, lists Lichess links to your own positions, and surfaces which
+openings appear most often in your losses.
+
+Automatically included as the final step when you run `run.py`.
+
+---
+
 ## How burn detection works
 
 ```
@@ -211,6 +227,7 @@ Chess/
 ├── categorize_losses.py    # 2. classify losses (requires stockfish)
 ├── make_quiz.py            # 3. generate burn_quiz/ (A1+A2 only)
 ├── make_blunder_quiz.py    # 4. generate blunder_quiz/ (A3 only)
+├── study_recommendations.py # 5. synthesize categorization into a study plan
 ├── burn_finder.py          # core library: clock parsing, board tracking, rendering, stockfish
 ├── blunder_finder.py       # eval-replay engine: finds moves that lost the game
 ├── .gitignore
